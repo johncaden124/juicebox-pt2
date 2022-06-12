@@ -1,6 +1,6 @@
 const { Client } = require('pg') // imports the pg module
 
-const client = new Client('postgres://localhost:5432/juicebox-dev');
+const client = new Client(process.env.DATABASE_URL || 'postgres://localhost:5432/juicebox-dev');
 
 /**
  * USER Methods
@@ -183,6 +183,15 @@ async function getPostById(postId) {
       WHERE id=$1;
     `, [postId]);
 
+    // THIS IS NEW
+    if (!post) {
+      throw {
+        name: "PostNotFoundError",
+        message: "Could not find a post with that postId"
+      };
+    }
+    // NEWNESS ENDS HERE
+
     const { rows: tags } = await client.query(`
       SELECT tags.*
       FROM tags
@@ -320,6 +329,19 @@ async function getAllTags() {
   }
 }
 
+async function getUserByUsername(username) {
+  try {
+    const { rows: [user] } = await client.query(`
+      SELECT *
+      FROM users
+      WHERE username=$1;
+    `, [username]);
+
+    return user;
+  } catch (error) {
+    throw error;
+  }
+}
 
 module.exports = {  
   client,
@@ -335,5 +357,7 @@ module.exports = {
   createTags,
   getAllTags,
   createPostTag,
-  addTagsToPost
+  addTagsToPost,
+  getUserByUsername,
+  getPostById,
 }
